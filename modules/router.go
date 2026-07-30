@@ -7,7 +7,7 @@ import (
 	"financial-system/config"
 	"financial-system/middleware"
 	"financial-system/modules/city"
-	"financial-system/modules/feeTypes"
+	"financial-system/modules/feetype"
 	"financial-system/modules/member"
 	"financial-system/modules/user"
 
@@ -30,9 +30,9 @@ func SetupRoutes(router *gin.Engine, dbConn *sql.DB, cfg *config.Config) {
 	memberService := member.NewService(memberRepo, cityService)
 	memberHandler := member.NewHandler(memberService)
 
-	feeTypeRepo := feeTypes.NewRepository(dbConn)
-	feeTypeService := feeTypes.NewService(feeTypeRepo)
-	feeTypeHandler := feeTypes.NewHandler(feeTypeService)
+	feeTypeRepo := feetype.NewRepository(dbConn)
+	feeTypeService := feetype.NewService(feeTypeRepo)
+	feeTypeHandler := feetype.NewHandler(feeTypeService)
 
 	v1 := router.Group("/api/v1")
 	{
