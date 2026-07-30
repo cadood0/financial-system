@@ -7,6 +7,7 @@ import (
 	"financial-system/config"
 	"financial-system/middleware"
 	"financial-system/modules/city"
+	"financial-system/modules/feeTypes"
 	"financial-system/modules/member"
 	"financial-system/modules/user"
 
@@ -28,6 +29,10 @@ func SetupRoutes(router *gin.Engine, dbConn *sql.DB, cfg *config.Config) {
 
 	memberService := member.NewService(memberRepo, cityService)
 	memberHandler := member.NewHandler(memberService)
+
+	feeTypeRepo := feeTypes.NewRepository(dbConn)
+	feeTypeService := feeTypes.NewService(feeTypeRepo)
+	feeTypeHandler := feeTypes.NewHandler(feeTypeService)
 
 	v1 := router.Group("/api/v1")
 	{
@@ -66,6 +71,15 @@ func SetupRoutes(router *gin.Engine, dbConn *sql.DB, cfg *config.Config) {
 				members.GET("/:id", memberHandler.GetByID)
 				members.PUT("/:id", memberHandler.Update)
 				members.DELETE("/:id", memberHandler.Delete)
+			}
+
+			feeTypes := protected.Group("/feeTypes")
+			{
+				feeTypes.POST("", feeTypeHandler.Create)
+				feeTypes.GET("", feeTypeHandler.List)
+				feeTypes.GET("/:id", feeTypeHandler.GetByID)
+				feeTypes.PUT("/:id", feeTypeHandler.Update)
+				feeTypes.DELETE("/:id", feeTypeHandler.Delete)
 			}
 		}
 	}
