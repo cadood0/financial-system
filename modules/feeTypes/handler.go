@@ -20,13 +20,13 @@ func NewHandler(service *Service) *Handler {
 type CreateFeeTypeRequest struct {
 	Name        string `json:"name" binding:"required,min=2,max=150"`
 	Description string `json:"description" binding:"max=250"`
-	IsActive    bool   `json:"is_active"`
+	IsActive    *bool  `json:"is_active"`
 }
 
 type UpdateFeeTypeRequest struct {
 	Name        string `json:"name" binding:"required,min=2,max=150"`
 	Description string `json:"description" binding:"max=250"`
-	IsActive    bool   `json:"is_active"`
+	IsActive    *bool  `json:"is_active"`
 }
 
 func (h *Handler) Create(c *gin.Context) {
@@ -37,7 +37,18 @@ func (h *Handler) Create(c *gin.Context) {
 		return
 	}
 
-	feeType, err := h.service.Create(req.Name, req.Description, req.IsActive)
+	active := true
+
+	if req.IsActive != nil {
+		active = *req.IsActive
+	}
+
+	feeType, err := h.service.Create(
+		req.Name,
+		req.Description,
+		active,
+	)
+
 	if err != nil {
 		switch {
 		case errors.Is(err, ErrNameTaken):
@@ -119,11 +130,30 @@ func (h *Handler) Update(c *gin.Context) {
 		return
 	}
 
+	// Get current record
+	current, err := h.service.GetByID(id)
+	if err != nil {
+		switch {
+		case errors.Is(err, ErrNotFound):
+			c.JSON(http.StatusNotFound, gin.H{"error": "fee type not found"})
+		default:
+			log.Printf("get fee type failed: %v", err)
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "something went wrong"})
+		}
+		return
+	}
+
+	// Keep existing value unless client sent a new one
+	active := current.IsActive
+	if req.IsActive != nil {
+		active = *req.IsActive
+	}
+
 	feeType, err := h.service.Update(
 		id,
 		req.Name,
 		req.Description,
-		req.IsActive,
+		active,
 	)
 
 	if err != nil {
@@ -141,7 +171,6 @@ func (h *Handler) Update(c *gin.Context) {
 
 	c.JSON(http.StatusOK, feeType)
 }
-
 func (h *Handler) Delete(c *gin.Context) {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
