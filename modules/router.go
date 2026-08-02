@@ -6,9 +6,12 @@ import (
 
 	"financial-system/config"
 	"financial-system/middleware"
+	"financial-system/modules/charge"
 	"financial-system/modules/city"
-	"financial-system/modules/feetype"
+	"financial-system/modules/dashboard"
+	"financial-system/modules/feeTypes"
 	"financial-system/modules/member"
+	"financial-system/modules/payment"
 	"financial-system/modules/user"
 
 	"github.com/gin-gonic/gin"
@@ -30,9 +33,21 @@ func SetupRoutes(router *gin.Engine, dbConn *sql.DB, cfg *config.Config) {
 	memberService := member.NewService(memberRepo, cityService)
 	memberHandler := member.NewHandler(memberService)
 
-	feeTypeRepo := feetype.NewRepository(dbConn)
-	feeTypeService := feetype.NewService(feeTypeRepo)
-	feeTypeHandler := feetype.NewHandler(feeTypeService)
+	feeTypeRepo := feeTypes.NewRepository(dbConn)
+	feeTypeService := feeTypes.NewService(feeTypeRepo)
+	feeTypeHandler := feeTypes.NewHandler(feeTypeService)
+
+	chargeRepo := charge.NewRepository(dbConn)
+	chargeService := charge.NewService(chargeRepo, memberService, feeTypeService)
+	chargeHandler := charge.NewHandler(chargeService)
+
+	paymentRepo := payment.NewRepository(dbConn)
+	paymentService := payment.NewService(paymentRepo, chargeService)
+	paymentHandler := payment.NewHandler(paymentService)
+
+	dashboardRepo := dashboard.NewRepository(dbConn)
+	dashboardService := dashboard.NewService(dashboardRepo)
+	dashboardHandler := dashboard.NewHandler(dashboardService)
 
 	v1 := router.Group("/api/v1")
 	{
@@ -80,6 +95,31 @@ func SetupRoutes(router *gin.Engine, dbConn *sql.DB, cfg *config.Config) {
 				feeTypes.GET("/:id", feeTypeHandler.GetByID)
 				feeTypes.PUT("/:id", feeTypeHandler.Update)
 				feeTypes.DELETE("/:id", feeTypeHandler.Delete)
+			}
+
+			charges := protected.Group("/monthly-charges")
+			{
+				charges.POST("", chargeHandler.Create)
+				charges.GET("", chargeHandler.List)
+				charges.GET("/:id", chargeHandler.GetByID)
+				charges.PUT("/:id", chargeHandler.Update)
+				charges.DELETE("/:id", chargeHandler.Delete)
+			}
+
+			payments := protected.Group("/payments")
+			{
+				payments.POST("", paymentHandler.Record)
+				payments.GET("", paymentHandler.List)
+				payments.GET("/:id", paymentHandler.GetByID)
+				payments.GET("/summary", paymentHandler.Summary)
+			}
+
+			dash := protected.Group("/dashboard")
+			{
+				dash.GET("/summary", dashboardHandler.Summary)
+				dash.GET("/monthly-revenue", dashboardHandler.MonthlyRevenue)
+				dash.GET("/revenue-by-city", dashboardHandler.RevenueByCity)
+				dash.GET("/revenue-by-fee-type", dashboardHandler.RevenueByFeeType)
 			}
 		}
 	}
