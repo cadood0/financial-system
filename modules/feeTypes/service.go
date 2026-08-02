@@ -74,6 +74,17 @@ func (s *Service) Update(id int64, name, description string, isActive bool) (*Fe
 	return s.repo.FindByID(id)
 }
 
+func (s *Service) ExistsActive(id int64) (bool, error) {
+	f, err := s.repo.FindByID(id)
+	if errors.Is(err, ErrNotFound) {
+		return false, nil
+	}
+	if err != nil {
+		return false, err
+	}
+	return f.IsActive, nil
+}
+
 func (s *Service) Delete(id int64) error {
 	return s.repo.Delete(id)
 }
