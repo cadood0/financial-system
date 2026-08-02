@@ -86,6 +86,17 @@ func (s *Service) Update(id int64, fullName, phone string, cityID int64) (*Membe
 	return s.repo.FindByID(id)
 }
 
+func (s *Service) Exists(id int64) (bool, error) {
+	_, err := s.repo.FindByID(id)
+	if errors.Is(err, ErrNotFound) {
+		return false, nil
+	}
+	if err != nil {
+		return false, err
+	}
+	return true, nil
+}
+
 func (s *Service) Delete(id int64) error {
 	return s.repo.Delete(id)
 }
