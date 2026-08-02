@@ -144,7 +144,7 @@ func (r *Repository) List(search string, limit, offset int) ([]FeeType, int, err
 	}
 	defer rows.Close()
 
-	var feeTypes []FeeType
+	feeTypes := []FeeType{}
 
 	for rows.Next() {
 		var f FeeType
